@@ -33,7 +33,7 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.llvm.gnu.c.linker.base.1794805426" name="LLVM GNU C linker" superClass="cdt.managedbuild.tool.llvm.gnu.c.linker.base"/>
 							<tool id="cdt.managedbuild.tool.llvm.gnu.cpp.linker.base.752441951" name="LLVM GNU C++ linker" superClass="cdt.managedbuild.tool.llvm.gnu.cpp.linker.base">
-								<option id="llvm.c.link.option.ldflags.378497693" name="Linker flags" superClass="llvm.c.link.option.ldflags" useByScannerDiscovery="false" value="-lglfw -framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo -framework Carbon -lGLEW" valueType="string"/>
+								<option id="llvm.c.link.option.ldflags.378497693" name="Linker flags" superClass="llvm.c.link.option.ldflags" useByScannerDiscovery="false" value="-lglfw -lassimp -framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo -framework Carbon -lGLEW" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.llvm.c.linker.input.135038264" superClass="cdt.managedbuild.tool.llvm.c.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>

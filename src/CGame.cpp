@@ -23,6 +23,8 @@
 #include "objects/BufferObject.h"
 #include "util/TextureLoader.h"
 
+#include "objects/Model.h"
+
 using namespace std;
 
 void processInput(GLFWwindow *window);
@@ -106,6 +108,13 @@ glm::vec3 cubePositions[] = {
     glm::vec3(-1.3f,  1.0f, -1.5f)
 };
 
+glm::vec3 pointLightPositions[] = {
+	glm::vec3( 0.7f,  0.2f,  2.0f),
+	glm::vec3( 2.3f, -3.3f, -4.0f),
+	glm::vec3(-4.0f,  2.0f, -12.0f),
+	glm::vec3( 0.0f,  0.0f, -3.0f)
+};
+
 glm::mat4 model;
 
 GLFWwindow* window;
@@ -113,6 +122,8 @@ GLFWwindow* window;
 BufferObject* cube;
 
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+
+Model* suit;
 
 int main(void) {
 	setup();
@@ -133,7 +144,7 @@ int main(void) {
 
 	glm::vec3 lightColor = vec3(1.0f, 1.0f, 1.0f);
 
-	lighting = new Shader("spotlight");
+	lighting = new Shader("light");
 	lighting->use();
 	lighting->setMat4("projection", projection);
 	lighting->setVec3("objectColor", glm::vec3(1.0f, 1.0f, 1.0f));
@@ -144,17 +155,30 @@ int main(void) {
 	lighting->setInt("material.specular", 1);
 	lighting->setFloat("material.shininess", 32.0f);
 
-	lighting->setVec3("light.ambient", vec3(0.2f, 0.2f, 0.2f));
-	lighting->setVec3("light.diffuse", vec3(0.5f, 0.5f, 0.5f));
-	lighting->setVec3("light.specular", vec3(1.0f, 1.0f, 1.0f));
-	lighting->setVec3("light.position", camera->position);
-	lighting->setVec3("light.direction", camera->front);
-	lighting->setFloat("light.cutOff", glm::cos(glm::radians(18.5f)));
-	lighting->setFloat("light.outerCutOff", glm::cos(glm::radians(20.5f)));
+	for (int i = 0; i < 4; i++) {
+		std::string base = "pointLights[" + std::to_string(i) + "]";
+		lighting->setVec3((base + ".ambient").c_str(), vec3(0.2f, 0.2f, 0.2f));
+		lighting->setVec3((base + ".diffuse").c_str(), vec3(0.5f, 0.5f, 0.5f));
+		lighting->setVec3((base + ".specular").c_str(), vec3(1.0f, 1.0f, 1.0f));
+		lighting->setVec3((base + ".position").c_str(), pointLightPositions[i]);
 
-	lighting->setFloat("light.constant", 1.0f);
-	lighting->setFloat("light.linear", 0.09f);
-	lighting->setFloat("light.quadratic", 0.032f);
+		lighting->setFloat((base + ".constant").c_str(), 1.0f);
+		lighting->setFloat((base + ".linear").c_str(), 0.09f);
+		lighting->setFloat((base + ".quadratic").c_str(), 0.032f);
+	}
+
+	lighting->setVec3("spotlight.ambient", vec3(0.2f, 0.2f, 0.2f));
+	lighting->setVec3("spotlight.diffuse", vec3(0.5f, 0.5f, 0.5f));
+	lighting->setVec3("spotlight.specular", vec3(1.0f, 1.0f, 1.0f));
+	lighting->setVec3("spotlight.position", camera->position);
+	lighting->setVec3("spotlight.direction", camera->front);
+
+	lighting->setFloat("spotlight.cutOff", glm::cos(glm::radians(12.0f)));
+	lighting->setFloat("spotlight.outerCutOff", glm::cos(glm::radians(15.0f)));
+
+	lighting->setFloat("spotlight.constant", 1.0f);
+	lighting->setFloat("spotlight.linear", 0.09f);
+	lighting->setFloat("spotlight.quadratic", 0.032f);
 
 	lamp = new Shader("lamp");
 	lamp->use();
@@ -173,6 +197,8 @@ int main(void) {
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, specularMap);
 
+	suit = new Model("res/nanosuit/nanosuit.obj");
+
 	while(!glfwWindowShouldClose(window)) {
 		render(window);
 	}
@@ -181,6 +207,7 @@ int main(void) {
 	delete lamp;
 	delete camera;
 	delete cube;
+	delete suit;
 
 	glfwTerminate();
 
@@ -232,31 +259,40 @@ void render(GLFWwindow* window) {
 	model = glm::scale(model, glm::vec3(0.2f));
 
 	lamp->use();
-	lamp->setMat4("model", model);
 	lamp->setMat4("view", camera->getMatrix());
-	cube->draw();
+
+	for (int i = 0; i < 4; i++) {
+		glm::mat4 mdl;
+		mdl = glm::translate(mdl, pointLightPositions[i]);
+		mdl = glm::scale(mdl, glm::vec3(0.2f));
+		lamp->setMat4("model", mdl);
+		cube->draw();
+	}
 
 	glm::mat4 ml;
 	ml = glm::translate(ml, glm::vec3(0, 0, 0));
 
 	lighting->use();
-	lighting->setVec3("light.position", camera->position);
-	lighting->setVec3("light.direction", camera->front);
+
 	lighting->setMat4("model", ml);
 	lighting->setVec3("viewPos", camera->position);
 	lighting->setMat4("view", camera->getMatrix());
-//	cube->draw();
+	lighting->setVec3("spotlight.position", camera->position);
+	lighting->setVec3("spotlight.direction", camera->front);
 
-	for(unsigned int i = 0; i < 10; i++)
-	{
-	    glm::mat4 model;
-	    model = glm::translate(model, cubePositions[i]);
-	    float angle = 20.0f * i;
-	    model = glm::rotate(model, glm::radians(angle) * (float)glfwGetTime() * 0.1f, glm::vec3(1.0f, 0.3f, 0.5f));
-	    lighting->setMat4("model", model);
+//	for(unsigned int i = 0; i < 10; i++) {
+//	    glm::mat4 model;
+//	    model = glm::translate(model, cubePositions[i]);
+//	    float angle = 20.0f * i;
+//	    model = glm::rotate(model, glm::radians(angle) * (float)glfwGetTime() * 0.1f, glm::vec3(1.0f, 0.3f, 0.5f));
+//	    lighting->setMat4("model", model);
+//
+//	    cube->draw();
+//	}
 
-	    cube->draw();
-	}
+	glm::mat4 m;
+	lighting->setMat4("model", glm::translate(m, glm::vec3(0, -12, -8)));
+	suit->draw(lighting);
 
 	glfwSwapBuffers(window);
 	glfwPollEvents();
